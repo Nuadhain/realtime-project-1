@@ -1,0 +1,29 @@
+{
+  "name": "project-1",
+  "version": "1.0.0",
+  "description": "",
+  "main": "./src/server.js",
+  "scripts": {
+    "start": "node ./src/server.js",
+    "pretest": "eslint ./src --fix",
+    "test": "echo \"Tests complete\""
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SomeJerk/realtime-project-1"
+  },
+  "author": "Jason Noone",
+  "license": "UNLICENSED",
+  "bugs": {
+    "url": "https://github.com/SomeJerk/realtime-project-1"
+  },
+  "homepage": "https://github.com/SomeJerk/realtime-project-1",
+  "dependencies": {
+    "socket.io": "^2.0.4"
+  },
+  "devDependencies": {
+    "eslint": "^4.18.1",
+    "eslint-config-airbnb": "^16.1.0",
+    "eslint-plugin-import": "^2.9.0"
+  }
+}
