@@ -15,6 +15,7 @@
         let time = 0;
         let drawing = false;
         let mouse;
+        let user;
 
         const setup = () => {
             sendBufferCanvas = document.createElement("canvas");
@@ -31,6 +32,30 @@
             };
             
             socket.emit('draw', data);
+        };
+
+        const userConnected = () => {
+            user = document.querySelector('#username').value;
+            
+            socket.emit('join', user);
+        };
+
+        const getMsg = (data) => {
+            document.querySelector('#chat').value += "\n" + data.name + ": " + data.msg;
+        };
+
+        const sendMsg = () => {
+            let message = document.querySelector('#message');
+            
+            if(message.value !== "") {
+                let data = {
+                    msg: message.value,
+                    name: user,
+                };
+
+                message.value = "";
+                socket.emit('sendMsg', data);
+            }
         };
 
         const addRect = (inX, inY, inColor) => {
@@ -111,12 +136,14 @@
                 canvas.onmouseup = doMouseUp;
                 canvas.onmousemove = doMouseMove;
                 canvas.onmouseout = doMouseOut;
+                document.querySelector('#send').onclick = sendMsg;
                 
                 setInterval(decrementTime, 1000);
             });
             
             socket.on('update', handleMessage);
             socket.on('timeChange', setTimer);
+            socket.on('receiveMsg', getMsg);
         };
 
         window.onload = init;
@@ -135,5 +162,12 @@
         <option value="orange">Orange</option>
         <option value="purple">Purple</option>
     </select>
+    
+    <label>Username: </label>
+    <input id="name" name="user" type="text" />
+    <label>Message: </label>
+    <input id="message" name="message" type="text" />
+    <input id="send" type="button" value="send" />
+    <textarea id="chat" rows="20" cols="40" readonly></textarea>
 </body>
 </html>

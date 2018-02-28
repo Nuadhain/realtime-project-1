@@ -26,6 +26,10 @@ const rect = {
   color: 'black',
 };
 
+const user = {
+  name: 'default',
+};
+
 let time = 0;
 
 io.on('connect', (socket) => {
@@ -43,5 +47,24 @@ io.on('connect', (socket) => {
     time = data;
 
     io.sockets.in('room').emit('timeChange', time);
+  });
+
+  socket.on('join', (data) => {
+    user.name = data;
+    const message = {
+      msg: `${user.name} has joined`,
+      name: 'server',
+    };
+
+    io.sockets.in('room').emit('receiveMsg', message);
+  });
+
+  socket.on('sendMsg', (data) => {
+    const message = {
+      msg: data.msg,
+      name: data.name,
+    };
+
+    io.sockets.in('room').emit('receiveMsg', message);
   });
 });
