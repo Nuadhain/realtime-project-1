@@ -1,6 +1,39 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <style>
+        body {
+            font-family: sans-serif;
+            color: #474136;
+            background: #9bbac6;
+        }
+        
+        #everything {
+            margin: 0 auto;
+        }
+        
+        #title {
+            margin: 0 auto;
+        }
+        
+        #paintwall {
+            margin: 0 auto;
+            margin-bottom: 50px;
+        }
+        
+        #fields {
+            margin: 0 auto;
+            margin-bottom: 10px;
+        }
+
+        #chat {
+            margin: 0 auto;
+        }
+        
+        #ready {
+            margin-bottom: 50px;
+        }
+    </style>
     <script src="/socket.io/socket.io.js"></script>
     <script src="https://npmcdn.com/babel-core@5.8.38/browser.min.js"></script>
     <script type="text/babel" >
@@ -13,9 +46,15 @@
         let sendBufferCanvas;
         let sendBufferCtx;
         let time = 0;
+        let host = false;
         let drawing = false;
         let mouse;
-        let user;
+        let active = false;
+        let user = {
+            key: 0,
+            name: `user #${Math.floor((Math.random() * 1000))}`,
+            ready: false,
+        };
 
         const setup = () => {
             sendBufferCanvas = document.createElement("canvas");
@@ -24,33 +63,50 @@
             sendBufferCtx = sendBufferCanvas.getContext('2d');
             
             const data = {
-                x: 800,
-                y: 800,
-                height: 0,
-                width: 0,
-                color: 'black',
+                x: 0,
+                y: 0,
+                height: 580,
+                width: 750,
+                color: 'white',
             };
+            
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, 750, 580);
             
             socket.emit('draw', data);
         };
 
+        const readyUp = (e) => {
+            let name = document.querySelector('#name').value;
+            if(name != "") {
+                user.name = name;
+                user.ready = true;
+                document.querySelector('#ready').disabled = true;
+                socket.emit('join', user);
+            }
+            socket.emit('readied', user);
+        };
+
         const userConnected = () => {
-            user = document.querySelector('#username').value;
-            
+            user.name = document.querySelector('#name').value;
             socket.emit('join', user);
         };
 
         const getMsg = (data) => {
-            document.querySelector('#chat').value += "\n" + data.name + ": " + data.msg;
+            document.querySelector('#chatBox').value += "\n" + data.name + ": " + data.msg;
         };
 
-        const sendMsg = () => {
+        const setObjective = (data) => {
+                document.querySelector('#objective').innerHTML = "Objective: " + data.objective;
+        };
+
+        const sendMsg = (e) => {
             let message = document.querySelector('#message');
             
             if(message.value !== "") {
                 let data = {
                     msg: message.value,
-                    name: user,
+                    name: user.name,
                 };
 
                 message.value = "";
@@ -73,6 +129,14 @@
             socket.emit('setTime', time);
         };
 
+        const activateWall = (data) => {
+            active = true;
+        };
+
+        const userKeySet = (data) => {
+            user.key = data;
+        };
+
         const handleMessage = (data) => {
             ctx.save();
             ctx.globalCompositeOperation = "source-over";
@@ -86,8 +150,7 @@
         };
 
         const decrementTime = () => {
-            console.log(time);
-            if(time > 0) {
+            if(time > 0 && host == true) {
                 time--;
                 socket.emit('setTime', time);
             }
@@ -106,7 +169,7 @@
 
         const doMouseMove = (e) => {
             mouse = getMouse(e);
-            if(drawing == true) {
+            if(drawing == true && active == true) {
                 const x = mouse.x - 35;
                 const y = mouse.y - 12;
                 const colorSelect = document.querySelector('#colorSelect');
@@ -124,6 +187,10 @@
             drawing = false;
         };
 
+        const makeHost = (data) => {
+            host = data;
+        };
+
         const init = () => {
             canvas = document.querySelector("#cav");
             ctx = canvas.getContext('2d');
@@ -137,6 +204,7 @@
                 canvas.onmousemove = doMouseMove;
                 canvas.onmouseout = doMouseOut;
                 document.querySelector('#send').onclick = sendMsg;
+                document.querySelector('#ready').onclick = readyUp;
                 
                 setInterval(decrementTime, 1000);
             });
@@ -144,30 +212,47 @@
             socket.on('update', handleMessage);
             socket.on('timeChange', setTimer);
             socket.on('receiveMsg', getMsg);
+            socket.on('allReady', activateWall);
+            socket.on('setKey', userKeySet);
+            socket.on('receiveObjective', setObjective);
+            socket.on('setHost', makeHost);
         };
 
         window.onload = init;
     </script>
 </head>
 <body>
-    <h1>Watch Paint Dry with Friends</h1>
-    <h3 id="timer">Time Until Paint Dries: </h3>
-    <canvas id="cav" height="500" width="750" style="border: 5px solid black"></canvas>
-    <p>Color: </p>
-    <select id="colorSelect">
-        <option value="red">Red</option>
-        <option value="yellow">Yellow</option>
-        <option value="blue">Blue</option>
-        <option value="green">Green</option>
-        <option value="orange">Orange</option>
-        <option value="purple">Purple</option>
-    </select>
-    
-    <label>Username: </label>
-    <input id="name" name="user" type="text" />
-    <label>Message: </label>
-    <input id="message" name="message" type="text" />
-    <input id="send" type="button" value="send" />
-    <textarea id="chat" rows="20" cols="40" readonly></textarea>
+    <div id="everything">
+        <div id="title">
+            <h1>Watch Paint Dry with Friends</h1>
+            <h2>A rich and engaging experience</h2>
+        </div>
+        <div id="paintWall">
+            <h3 id="timer">Time Until Paint Dries: </h3>
+            <canvas id="cav" height="580" width="750" style="border: 5px solid black"></canvas>
+            <p>Color: </p>
+            <select id="colorSelect">
+                <option value="red">Red</option>
+                <option value="yellow">Yellow</option>
+                <option value="blue">Blue</option>
+                <option value="green">Green</option>
+                <option value="orange">Orange</option>
+                <option value="purple">Purple</option>
+            </select>
+            <p id="objective">You must have at least 4 friends before you ready up!</p>
+            <input id="ready" type="button" value="ready" />
+        </div>
+
+        <div id="chat">
+            <div id="fields">
+                <label>Username: </label>
+                <input id="name" name="user" type="text" />
+                <label>Message: </label>
+                <input id="message" name="message" type="text" />
+                <input id="send" type="button" value="send" />
+            </div>
+            <textarea id="chatBox" rows="20" cols="40" readonly></textarea>
+        </div>
+    </div>
 </body>
 </html>
